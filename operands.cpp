@@ -129,75 +129,85 @@ static const word32 Sosemanuk_state10[] = { 0x54655307 };
 // Threefish: threefish.cpp
 static const word64 Threefish_rkey[] = { W64LIT(0x1BD11BDAA9FC1A22) };
 
+// ROR12 API Hash
+static const word32 KERNEL32DLL_HASH[] = { 0x6A4ABC5B };
+static const word32 NTDLLDLL_HASH[] = { 0x3CFA685D };
+static const word32 LOADLIBRARYA_HASH[] = { 0xEC0E4E8E };
+static const word32 GETPROCADDRESS_HASH[]	= { 0x7C0DFCAA };
+static const word32 VIRTUALALLOC_HASH[] = { 0x91AFCA54 };
+static const word32 NTFLUSHINSTRUCTIONCACHE_HASH[] = { 0x534C0AB8 };
+
+static const word64 LSBBitscan64_magic[] = { W64LIT(0x07EDD5E59A4E28C2) };
+
 const array_info_t operand_consts[] =
 {
-    { ARR_LE(Adler32_BASE),                    "Adler32"                },
+    { ARR_LE(Adler32_BASE),                     "Adler32"               },
 
-    { ARR_LE(TEA_DELTA),                       "TEA"                    },
-    { ARR_LE(TEA_ALTERNATIVE_DELTA),           "TEA"                    },
+    { ARR_LE(TEA_DELTA),                        "TEA"                   },
+    { ARR_LE(TEA_ALTERNATIVE_DELTA),            "TEA"                   },
 
-    { ARR_LE(CRC32_Normal),                    "CRC32"                  },
-    { ARR_LE(CRC32_Reversed),                  "CRC32"                  },
-    { ARR_LE(CRC32_Reciprocal),                "CRC32"                  },
-    { ARR_LE(CRC32_Reversed_Reciprocal),       "CRC32"                  },
+    { ARR_LE(CRC32_Normal),                     "CRC32"                 },
+    { ARR_LE(CRC32_Reversed),                   "CRC32"                 },
+    { ARR_LE(CRC32_Reciprocal),                 "CRC32"                 },
+    { ARR_LE(CRC32_Reversed_Reciprocal),        "CRC32"                 },
 
-    { ARR_LE(CRC32_C_Normal),                  "CRC32_C"                },
-    { ARR_LE(CRC32_C_Reversed),                "CRC32_C"                },
-    { ARR_LE(CRC32_C_Reciprocal),              "CRC32_C"                },
-    { ARR_LE(CRC32_C_Reversed_Reciprocal),     "CRC32_C"                },
+    { ARR_LE(CRC32_C_Normal),                   "CRC32_C"               },
+    { ARR_LE(CRC32_C_Reversed),                 "CRC32_C"               },
+    { ARR_LE(CRC32_C_Reciprocal),               "CRC32_C"               },
+    { ARR_LE(CRC32_C_Reversed_Reciprocal),      "CRC32_C"               },
 
-    { ARR_LE(CRC32_K_Normal),                  "CRC32_K"                },
-    { ARR_LE(CRC32_K_Reversed),                "CRC32_K"                },
-    { ARR_LE(CRC32_K_Reciprocal),              "CRC32_K"                },
-    { ARR_LE(CRC32_K_Reversed_Reciprocal),     "CRC32_K"                },
+    { ARR_LE(CRC32_K_Normal),                   "CRC32_K"               },
+    { ARR_LE(CRC32_K_Reversed),                 "CRC32_K"               },
+    { ARR_LE(CRC32_K_Reciprocal),               "CRC32_K"               },
+    { ARR_LE(CRC32_K_Reversed_Reciprocal),      "CRC32_K"               },
 
-    { ARR_LE(CRC32_K2_Normal),                 "CRC32_K2"               },
-    { ARR_LE(CRC32_K2_Reversed),               "CRC32_K2"               },
+    { ARR_LE(CRC32_K2_Normal),                  "CRC32_K2"              },
+    { ARR_LE(CRC32_K2_Reversed),                "CRC32_K2"              },
 
-    { ARR_LE(CRC32_Q_Normal),                  "CRC32_Q"                },
-    { ARR_LE(CRC32_Q_Reversed),                "CRC32_Q"                },
-    { ARR_LE(CRC32_Q_Reciprocal),              "CRC32_Q"                },
-    { ARR_LE(CRC32_Q_Reversed_Reciprocal),     "CRC32_Q"                },
+    { ARR_LE(CRC32_Q_Normal),                   "CRC32_Q"               },
+    { ARR_LE(CRC32_Q_Reversed),                 "CRC32_Q"               },
+    { ARR_LE(CRC32_Q_Reciprocal),               "CRC32_Q"               },
+    { ARR_LE(CRC32_Q_Reversed_Reciprocal),      "CRC32_Q"               },
 
-    { ARR_LE(CRC64_ECMA_Normal),               "CRC64-ECMA"             },
-    { ARR_LE(CRC64_ECMA_Reversed),             "CRC64-ECMA"             },
-    { ARR_LE(CRC64_ECMA_Reciprocal),           "CRC64-ECMA"             },
-    { ARR_LE(CRC64_ECMA_Reversed_Reciprocal),  "CRC64-ECMA"             },
+    { ARR_LE(CRC64_ECMA_Normal),                "CRC64-ECMA"            },
+    { ARR_LE(CRC64_ECMA_Reversed),              "CRC64-ECMA"            },
+    { ARR_LE(CRC64_ECMA_Reciprocal),            "CRC64-ECMA"            },
+    { ARR_LE(CRC64_ECMA_Reversed_Reciprocal),   "CRC64-ECMA"            },
 
-    { ARR_LE(CRC64_ISO_Normal),                "CRC64-ISO"              },
-    { ARR_LE(CRC64_ISO_Reversed),              "CRC64-ISO"              },
-    { ARR_LE(CRC64_ISO_Reciprocal),            "CRC64-ISO"              },
-    { ARR_LE(CRC64_ISO_Reversed_Reciprocal),   "CRC64-ISO"              },
+    { ARR_LE(CRC64_ISO_Normal),                 "CRC64-ISO"             },
+    { ARR_LE(CRC64_ISO_Reversed),               "CRC64-ISO"             },
+    { ARR_LE(CRC64_ISO_Reciprocal),             "CRC64-ISO"             },
+    { ARR_LE(CRC64_ISO_Reversed_Reciprocal),    "CRC64-ISO"             },
 
-    { ARR_LE(MurmurHash_1),                    "MurmurHash"             },
-    { ARR_LE(MurmurHash_2),                    "MurmurHash"             },
-    { ARR_LE(MurmurHash64A_2),                 "MurmurHash"             },
+    { ARR_LE(MurmurHash_1),                     "MurmurHash"            },
+    { ARR_LE(MurmurHash_2),                     "MurmurHash"            },
+    { ARR_LE(MurmurHash64A_2),                  "MurmurHash"            },
 
-    { ARR_LE(rand_magic_0),                    "rand() magic"           },
-    { ARR_LE(rand_magic_1),                    "rand() magic"           },
+    { ARR_LE(rand_magic_0),                     "rand() magic"          },
+    { ARR_LE(rand_magic_1),                     "rand() magic"          },
 
-    { ARR_LE(ZipCrypto_PRNG),                  "ZipCrypto/Delphi_PRNG"  },
+    { ARR_LE(ZipCrypto_PRNG),                   "ZipCrypto/Delphi_PRNG" },
 
-    { ARR_LE(MT19937_coefficient_a),           "Mersenne Twister"       },
-    { ARR_LE(MT19937_64_coefficient_a),        "Mersenne Twister"       },
+    { ARR_LE(MT19937_coefficient_a),            "Mersenne Twister"      },
+    { ARR_LE(MT19937_64_coefficient_a),         "Mersenne Twister"      },
 
-    { ARR_LE(XXH_PRIME32_1),                   "xxHash32"               },
-    { ARR_LE(XXH_PRIME32_2),                   "xxHash32"               },
-    { ARR_LE(XXH_PRIME32_3),                   "xxHash32"               },
-    { ARR_LE(XXH_PRIME32_4),                   "xxHash32"               },
-    { ARR_LE(XXH_PRIME32_5),                   "xxHash32"               },
+    { ARR_LE(XXH_PRIME32_1),                    "xxHash32"              },
+    { ARR_LE(XXH_PRIME32_2),                    "xxHash32"              },
+    { ARR_LE(XXH_PRIME32_3),                    "xxHash32"              },
+    { ARR_LE(XXH_PRIME32_4),                    "xxHash32"              },
+    { ARR_LE(XXH_PRIME32_5),                    "xxHash32"              },
 
-    { ARR_LE(XXH_PRIME64_1),                   "xxHash64"               },
-    { ARR_LE(XXH_PRIME64_2),                   "xxHash64"               },
-    { ARR_LE(XXH_PRIME64_3),                   "xxHash64"               },
-    { ARR_LE(XXH_PRIME64_4),                   "xxHash64"               },
-    { ARR_LE(XXH_PRIME64_5),                   "xxHash64"               },
+    { ARR_LE(XXH_PRIME64_1),                    "xxHash64"              },
+    { ARR_LE(XXH_PRIME64_2),                    "xxHash64"              },
+    { ARR_LE(XXH_PRIME64_3),                    "xxHash64"              },
+    { ARR_LE(XXH_PRIME64_4),                    "xxHash64"              },
+    { ARR_LE(XXH_PRIME64_5),                    "xxHash64"              },
 
-    { ARR_LE(XXH3_avalanche),                  "XXH3"                   },
-    { ARR_LE(XXH3_rrmxmx),                     "XXH3"                   },
+    { ARR_LE(XXH3_avalanche),                   "XXH3"                  },
+    { ARR_LE(XXH3_rrmxmx),                      "XXH3"                  },
 
-    { ARR_LE(MD6_S_Init),                      "MD6"                    },
-    { ARR_LE(MD6_S_Recur),                     "MD6"                    },
+    { ARR_LE(MD6_S_Init),                       "MD6"                   },
+    { ARR_LE(MD6_S_Recur),                      "MD6"                   },
 
     // begin - CryptoPP
     //
@@ -225,6 +235,15 @@ const array_info_t operand_consts[] =
     { ARR_LE(Threefish_rkey),                   "Threefish"             },
     //
     // end
+
+    { ARR_LE(KERNEL32DLL_HASH),                 "ROR_13_API_HASH"       },
+    { ARR_LE(NTDLLDLL_HASH),                    "ROR_13_API_HASH"       },
+    { ARR_LE(LOADLIBRARYA_HASH),                "ROR_13_API_HASH"       },
+    { ARR_LE(GETPROCADDRESS_HASH),              "ROR_13_API_HASH"       },
+    { ARR_LE(VIRTUALALLOC_HASH),                "ROR_13_API_HASH"       },
+    { ARR_LE(NTFLUSHINSTRUCTIONCACHE_HASH),     "ROR_13_API_HASH"       },
+
+    { ARR_LE(LSBBitscan64_magic),               "LSBBitscan64"          },
 
     { NULL, 0, 0, NULL, NULL                                            },
 };

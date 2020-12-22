@@ -297,7 +297,7 @@ static bool make_array(ea_t ea, const array_info_t *ptr)
     // make C-string if ptr is ARR_SZ
     if ((1 == ptr->elsize) && (1 == ptr->big_endian))
     {
-        return create_strlit(ea, length + 1, STRTYPE_C);
+        return create_strlit(ea, length, STRTYPE_C);
     }
 
     switch (ptr->elsize)

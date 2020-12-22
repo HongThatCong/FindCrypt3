@@ -3,15 +3,11 @@
 // http://www.cs.rpi.edu/~musser/gp/gensearch/index.html
 //
 
+#include <windows.h>
 #include <pro.h>
 #include <kernwin.hpp>
 
 #include "findcrypt3.hpp"
-
-#ifndef PBYTE
-typedef byte    *PBYTE;
-typedef ssize_t  *PINT;
-#endif
 
 #define HASH_RANGE_MAX  512
 #define SUFFIX_SIZE     2
@@ -23,13 +19,13 @@ static inline ssize_t Hash(PBYTE pData)
 
 static ssize_t SearchSmallpat(PBYTE pSrc, ssize_t iSrcLen, PBYTE pPattern, ssize_t iPatternLen)
 {
-    if (!iSrcLen || !iPatternLen || (iPatternLen > iSrcLen))
+    if ((0 == iSrcLen) || (0 == iPatternLen) || (iPatternLen > iSrcLen))
         return -1;
 
     PBYTE pLimit = (pSrc + iSrcLen - iPatternLen);
     for (PBYTE p = pSrc; p <= pLimit; p++)
     {
-        if (!memcmp(p, pPattern, iPatternLen))
+        if (0 == memcmp(p, pPattern, iPatternLen))
             return (p - pSrc);
     }
 
@@ -49,7 +45,7 @@ static void ComputeBacktrackTable(PBYTE pPattern, ssize_t iPatternLen, ssize_t *
         }
 
         ++j, ++t;
-        piPatternBacktrack[j] = ((pPattern[j] == pPattern[t]) ? piPatternBacktrack[t] : t);
+        piPatternBacktrack[j] = pPattern[j] == pPattern[t] ? piPatternBacktrack[t] : t;
     };
 }
 
@@ -80,14 +76,15 @@ static ssize_t SearchHashed2(PBYTE pSrc, ssize_t iSrcLen, PBYTE pPattern, ssize_
 
     while (true)
     {
-        k += (iPatternLen - 1);
+        k += iPatternLen - 1;
         if (k >= 0)
             return -1;
 
         do
         {
             k += aSkip[Hash(pSrcEnd + k)];
-        } while (k < 0);
+        }
+        while (k < 0);
 
         if (k < iPatternLen)
         {
@@ -152,8 +149,8 @@ static ssize_t SearchHashed2(PBYTE pSrc, ssize_t iSrcLen, PBYTE pPattern, ssize_
     }
 }
 
-static PINT piPatternBacktrack = nullptr;
-static ssize_t  iPatternBacktrackSize = 0;
+static ssize_t *piPatternBacktrack = nullptr;
+static ssize_t iPatternBacktrackSize = 0;
 
 // Clean up pattern search data
 void ClearPatternSearchData()
@@ -161,7 +158,7 @@ void ClearPatternSearchData()
     if (piPatternBacktrack)
     {
         qfree(piPatternBacktrack);
-        piPatternBacktrack    = nullptr;
+        piPatternBacktrack = nullptr;
     };
     iPatternBacktrackSize = 0;
 }
