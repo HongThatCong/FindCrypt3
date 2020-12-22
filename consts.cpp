@@ -18748,6 +18748,236 @@ static const byte format_validation_lookup_table[]
     /* 'z' */  0x07
 };
 
+// corecrt_internal_stdio_output.h
+enum class state : unsigned
+{
+    normal,    // Normal state; outputting literal chars
+    percent,   // Just read '%'
+    flag,      // Just read flag character
+    width,     // Just read width specifier
+    dot,       // Just read '.'
+    precision, // Just read precision specifier
+    size,      // Just read size specifier
+    type,      // Just read type specifier
+    invalid    // Invalid format
+};
+
+// Manifest constants to represent the different types of characters that may
+// be encountered in the format string.  These are not referenced anywhere in
+// the source anymore, but their values are encoded into the state table, so
+// we have retained the definition for reference.
+enum class character_type : unsigned
+{
+    other,   // character with no special meaning
+    percent, // '%'
+    dot,     // '.'
+    star,    // '*'
+    zero,    // '0'
+    digit,   // '1'..'9'
+    flag,    // ' ', '+', '-', '#'
+    size,    // 'h', 'l', 'L', 'N', 'F', 'w'
+    type     // type specifying character
+};
+
+struct state_transition_pair
+{
+    state          next_state;
+    character_type current_class;
+};
+
+static const state_transition_pair standard_lookup_table_spectre[] =
+{
+    /* prev state -> cur char ->    new state                   character type */
+    /* normal     -> other    -> */ state::normal,    /* ' ' */ character_type::flag,
+    /* percent    -> other    -> */ state::normal,    /* '!' */ character_type::other,
+    /* flag       -> other    -> */ state::normal,    /* '"' */ character_type::other,
+    /* width      -> other    -> */ state::normal,    /* '#' */ character_type::flag,
+    /* dot        -> other    -> */ state::normal,    /* '$' */ character_type::other,
+    /* precision  -> other    -> */ state::normal,    /* '%' */ character_type::percent,
+    /* size       -> other    -> */ state::normal,    /* '&' */ character_type::other,
+    /* type       -> other    -> */ state::normal,    /* ''' */ character_type::other,
+    /* normal     -> percent  -> */ state::percent,   /* '(' */ character_type::other,
+    /* percent    -> percent  -> */ state::normal,    /* ')' */ character_type::other,
+    /* flag       -> percent  -> */ state::normal,    /* '*' */ character_type::star,
+    /* width      -> percent  -> */ state::normal,    /* '+' */ character_type::flag,
+    /* dot        -> percent  -> */ state::normal,    /* ',' */ character_type::other,
+    /* precision  -> percent  -> */ state::normal,    /* '-' */ character_type::flag,
+    /* size       -> percent  -> */ state::normal,    /* '.' */ character_type::dot,
+    /* type       -> percent  -> */ state::percent,   /* '/' */ character_type::other,
+    /* normal     -> dot      -> */ state::normal,    /* '0' */ character_type::zero,
+    /* percent    -> dot      -> */ state::dot,       /* '1' */ character_type::digit,
+    /* flag       -> dot      -> */ state::dot,       /* '2' */ character_type::digit,
+    /* width      -> dot      -> */ state::dot,       /* '3' */ character_type::digit,
+    /* dot        -> dot      -> */ state::normal,    /* '4' */ character_type::digit,
+    /* precision  -> dot      -> */ state::normal,    /* '5' */ character_type::digit,
+    /* size       -> dot      -> */ state::normal,    /* '6' */ character_type::digit,
+    /* type       -> dot      -> */ state::normal,    /* '7' */ character_type::digit,
+    /* normal     -> star     -> */ state::normal,    /* '8' */ character_type::digit,
+    /* percent    -> star     -> */ state::width,     /* '9' */ character_type::digit,
+    /* flag       -> star     -> */ state::width,     /* ':' */ character_type::other,
+    /* width      -> star     -> */ state::normal,    /* ';' */ character_type::other,
+    /* dot        -> star     -> */ state::precision, /* '<' */ character_type::other,
+    /* precision  -> star     -> */ state::normal,    /* '=' */ character_type::other,
+    /* size       -> star     -> */ state::normal,    /* '>' */ character_type::other,
+    /* type       -> star     -> */ state::normal,    /* '?' */ character_type::other,
+    /* normal     -> zero     -> */ state::normal,    /* '@' */ character_type::other,
+    /* percent    -> zero     -> */ state::flag,      /* 'A' */ character_type::type,
+    /* flag       -> zero     -> */ state::flag,      /* 'B' */ character_type::other,
+    /* width      -> zero     -> */ state::width,     /* 'C' */ character_type::type,
+    /* dot        -> zero     -> */ state::precision, /* 'D' */ character_type::other,
+    /* precision  -> zero     -> */ state::precision, /* 'E' */ character_type::type,
+    /* size       -> zero     -> */ state::normal,    /* 'F' */ character_type::size,
+    /* type       -> zero     -> */ state::normal,    /* 'G' */ character_type::type,
+    /* normal     -> digit    -> */ state::normal,    /* 'H' */ character_type::other,
+    /* percent    -> digit    -> */ state::width,     /* 'I' */ character_type::size,
+    /* flag       -> digit    -> */ state::width,     /* 'J' */ character_type::other,
+    /* width      -> digit    -> */ state::width,     /* 'K' */ character_type::other,
+    /* dot        -> digit    -> */ state::precision, /* 'L' */ character_type::size,
+    /* precision  -> digit    -> */ state::precision, /* 'M' */ character_type::other,
+    /* size       -> digit    -> */ state::normal,    /* 'N' */ character_type::size,
+    /* type       -> digit    -> */ state::normal,    /* 'O' */ character_type::other,
+    /* normal     -> flag     -> */ state::normal,    /* 'P' */ character_type::other,
+    /* percent    -> flag     -> */ state::flag,      /* 'Q' */ character_type::other,
+    /* flag       -> flag     -> */ state::flag,      /* 'R' */ character_type::other,
+    /* width      -> flag     -> */ state::normal,    /* 'S' */ character_type::type,
+    /* dot        -> flag     -> */ state::normal,    /* 'T' */ character_type::size,
+    /* precision  -> flag     -> */ state::normal,    /* 'U' */ character_type::other,
+    /* size       -> flag     -> */ state::normal,    /* 'V' */ character_type::other,
+    /* type       -> flag     -> */ state::normal,    /* 'W' */ character_type::other,
+    /* normal     -> size     -> */ state::normal,    /* 'X' */ character_type::type,
+    /* percent    -> size     -> */ state::size,      /* 'Y' */ character_type::other,
+    /* flag       -> size     -> */ state::size,      /* 'Z' */ character_type::type,
+    /* width      -> size     -> */ state::size,      /* '[' */ character_type::other,
+    /* dot        -> size     -> */ state::size,      /* '\' */ character_type::other,
+    /* precision  -> size     -> */ state::size,      /* ']' */ character_type::other,
+    /* size       -> size     -> */ state::size,      /* '^' */ character_type::other,
+    /* type       -> size     -> */ state::normal,    /* '_' */ character_type::other,
+    /* normal     -> type     -> */ state::normal,    /* '`' */ character_type::other,
+    /* percent    -> type     -> */ state::type,      /* 'a' */ character_type::type,
+    /* flag       -> type     -> */ state::type,      /* 'b' */ character_type::other,
+    /* width      -> type     -> */ state::type,      /* 'c' */ character_type::type,
+    /* dot        -> type     -> */ state::type,      /* 'd' */ character_type::type,
+    /* precision  -> type     -> */ state::type,      /* 'e' */ character_type::type,
+    /* size       -> type     -> */ state::type,      /* 'f' */ character_type::type,
+    /* type       -> type     -> */ state::normal,    /* 'g' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'h' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'i' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'j' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'k' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'l' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'm' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'n' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'o' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'p' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'q' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'r' */ character_type::other,
+    /* unused                    */ state::normal,    /* 's' */ character_type::type,
+    /* unused                    */ state::normal,    /* 't' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'u' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'v' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'w' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'x' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'y' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'z' */ character_type::size
+};
+
+// Note, the state transition and character type are unrelated data - they just occupy the same table.
+static const state_transition_pair format_validation_lookup_table_spectre[] =
+{
+    /* prev state -> cur char ->    new state                   character type */
+    /* normal     -> other    -> */ state::normal,    /* ' ' */ character_type::flag,
+    /* percent    -> other    -> */ state::invalid,   /* '!' */ character_type::other,
+    /* flag       -> other    -> */ state::invalid,   /* '"' */ character_type::other,
+    /* width      -> other    -> */ state::invalid,   /* '#' */ character_type::flag,
+    /* dot        -> other    -> */ state::invalid,   /* '$' */ character_type::other,
+    /* precision  -> other    -> */ state::invalid,   /* '%' */ character_type::percent,
+    /* size       -> other    -> */ state::invalid,   /* '&' */ character_type::other,
+    /* type       -> other    -> */ state::normal,    /* ''' */ character_type::other,
+    /* invalid    -> other    -> */ state::normal,    /* '(' */ character_type::other,
+    /* normal     -> percent  -> */ state::percent,   /* ')' */ character_type::other,
+    /* percent    -> percent  -> */ state::normal,    /* '*' */ character_type::star,
+    /* flag       -> percent  -> */ state::invalid,   /* '+' */ character_type::flag,
+    /* width      -> percent  -> */ state::invalid,   /* ',' */ character_type::other,
+    /* dot        -> percent  -> */ state::invalid,   /* '-' */ character_type::flag,
+    /* precision  -> percent  -> */ state::invalid,   /* '.' */ character_type::dot,
+    /* size       -> percent  -> */ state::invalid,   /* '/' */ character_type::other,
+    /* type       -> percent  -> */ state::percent,   /* '0' */ character_type::zero,
+    /* invalid    -> percent  -> */ state::normal,    /* '1' */ character_type::digit,
+    /* normal     -> dot      -> */ state::normal,    /* '2' */ character_type::digit,
+    /* percent    -> dot      -> */ state::dot,       /* '3' */ character_type::digit,
+    /* flag       -> dot      -> */ state::dot,       /* '4' */ character_type::digit,
+    /* width      -> dot      -> */ state::dot,       /* '5' */ character_type::digit,
+    /* dot        -> dot      -> */ state::invalid,   /* '6' */ character_type::digit,
+    /* precision  -> dot      -> */ state::invalid,   /* '7' */ character_type::digit,
+    /* size       -> dot      -> */ state::invalid,   /* '8' */ character_type::digit,
+    /* type       -> dot      -> */ state::normal,    /* '9' */ character_type::digit,
+    /* invalid    -> dot      -> */ state::normal,    /* ':' */ character_type::other,
+    /* normal     -> star     -> */ state::normal,    /* ';' */ character_type::other,
+    /* percent    -> star     -> */ state::width,     /* '<' */ character_type::other,
+    /* flag       -> star     -> */ state::width,     /* '=' */ character_type::other,
+    /* width      -> star     -> */ state::invalid,   /* '>' */ character_type::other,
+    /* dot        -> star     -> */ state::precision, /* '?' */ character_type::other,
+    /* precision  -> star     -> */ state::invalid,   /* '@' */ character_type::other,
+    /* size       -> star     -> */ state::invalid,   /* 'A' */ character_type::type,
+    /* type       -> star     -> */ state::normal,    /* 'B' */ character_type::other,
+    /* invalid    -> star     -> */ state::normal,    /* 'C' */ character_type::type,
+    /* normal     -> zero     -> */ state::normal,    /* 'D' */ character_type::other,
+    /* percent    -> zero     -> */ state::flag,      /* 'E' */ character_type::type,
+    /* flag       -> zero     -> */ state::flag,      /* 'F' */ character_type::size,
+    /* width      -> zero     -> */ state::width,     /* 'G' */ character_type::type,
+    /* dot        -> zero     -> */ state::precision, /* 'H' */ character_type::other,
+    /* precision  -> zero     -> */ state::precision, /* 'I' */ character_type::size,
+    /* size       -> zero     -> */ state::invalid,   /* 'J' */ character_type::other,
+    /* type       -> zero     -> */ state::normal,    /* 'K' */ character_type::other,
+    /* invalid    -> zero     -> */ state::normal,    /* 'L' */ character_type::size,
+    /* normal     -> digit    -> */ state::normal,    /* 'M' */ character_type::other,
+    /* percent    -> digit    -> */ state::width,     /* 'N' */ character_type::size,
+    /* flag       -> digit    -> */ state::width,     /* 'O' */ character_type::other,
+    /* width      -> digit    -> */ state::width,     /* 'P' */ character_type::other,
+    /* dot        -> digit    -> */ state::precision, /* 'Q' */ character_type::other,
+    /* precision  -> digit    -> */ state::precision, /* 'R' */ character_type::other,
+    /* size       -> digit    -> */ state::invalid,   /* 'S' */ character_type::type,
+    /* type       -> digit    -> */ state::normal,    /* 'T' */ character_type::size,
+    /* invalid    -> digit    -> */ state::normal,    /* 'U' */ character_type::other,
+    /* normal     -> flag     -> */ state::normal,    /* 'V' */ character_type::other,
+    /* percent    -> flag     -> */ state::flag,      /* 'W' */ character_type::other,
+    /* flag       -> flag     -> */ state::flag,      /* 'X' */ character_type::type,
+    /* width      -> flag     -> */ state::invalid,   /* 'Y' */ character_type::other,
+    /* dot        -> flag     -> */ state::invalid,   /* 'Z' */ character_type::type,
+    /* precision  -> flag     -> */ state::invalid,   /* '[' */ character_type::other,
+    /* size       -> flag     -> */ state::invalid,   /* '\' */ character_type::other,
+    /* type       -> flag     -> */ state::normal,    /* ']' */ character_type::other,
+    /* invalid    -> flag     -> */ state::normal,    /* '^' */ character_type::other,
+    /* normal     -> size     -> */ state::normal,    /* '_' */ character_type::other,
+    /* percent    -> size     -> */ state::size,      /* '`' */ character_type::other,
+    /* flag       -> size     -> */ state::size,      /* 'a' */ character_type::type,
+    /* width      -> size     -> */ state::size,      /* 'b' */ character_type::other,
+    /* dot        -> size     -> */ state::size,      /* 'c' */ character_type::type,
+    /* precision  -> size     -> */ state::size,      /* 'd' */ character_type::type,
+    /* size       -> size     -> */ state::size,      /* 'e' */ character_type::type,
+    /* type       -> size     -> */ state::normal,    /* 'f' */ character_type::type,
+    /* invalid    -> size     -> */ state::normal,    /* 'g' */ character_type::type,
+    /* normal     -> type     -> */ state::normal,    /* 'h' */ character_type::size,
+    /* percent    -> type     -> */ state::type,      /* 'i' */ character_type::type,
+    /* flag       -> type     -> */ state::type,      /* 'j' */ character_type::size,
+    /* width      -> type     -> */ state::type,      /* 'k' */ character_type::other,
+    /* dot        -> type     -> */ state::type,      /* 'l' */ character_type::size,
+    /* precision  -> type     -> */ state::type,      /* 'm' */ character_type::other,
+    /* size       -> type     -> */ state::type,      /* 'n' */ character_type::other,
+    /* type       -> type     -> */ state::normal,    /* 'o' */ character_type::type,
+    /* invalid    -> type     -> */ state::normal,    /* 'p' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'q' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'r' */ character_type::other,
+    /* unused                    */ state::normal,    /* 's' */ character_type::type,
+    /* unused                    */ state::normal,    /* 't' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'u' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'v' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'w' */ character_type::size,
+    /* unused                    */ state::normal,    /* 'x' */ character_type::type,
+    /* unused                    */ state::normal,    /* 'y' */ character_type::other,
+    /* unused                    */ state::normal,    /* 'z' */ character_type::size
+};
+
 //------------------------------------------------------------------------------
 // Final consts
 //
@@ -19451,6 +19681,8 @@ const array_info_t non_sparse_consts[] =
     { ARR_LE(constraints),                      "VC CRT/UCRT Library"           },
     { ARR_LE(standard_lookup_table),            "VC CRT/UCRT Library"           },
     { ARR_LE(format_validation_lookup_table),   "VC CRT/UCRT Library"           },
+    { ARR_LE(standard_lookup_table_spectre),    "VC CRT/UCRT Library"           },
+    { ARR_LE(format_validation_lookup_table_spectre),   "VC CRT/UCRT Library"   },
 
     // end of all
     { NULL, 0, 0, NULL, NULL }
